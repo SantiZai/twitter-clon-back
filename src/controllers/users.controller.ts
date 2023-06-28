@@ -1,9 +1,7 @@
 import { RequestHandler } from 'express'
 import { pool } from '../db'
-
-export interface RowData {
-    [ key: string ]: any
-}
+import { RowData } from '../interfaces/RowData'
+import { verifyUser } from '../utilities/verify'
 
 export const getUsers: RequestHandler = async (req, res) => {
     try {
@@ -78,14 +76,5 @@ export const followUser: RequestHandler = async (req, res) => {
 			res.status(200).json({ message: 'User updated' })
 	} catch (e) {
 		res.status(500).json({ message: 'Something goes wrong' })
-	}
-}
-
-const verifyUser = async (id: number) => {
-	try {
-		const [rows] = await pool.promise().query('SELECT * FROM users WHERE id = ?', [id]) as RowData[]
-		return rows.length > 0 
-	} catch (e) {
-		console.error(e)
 	}
 }
