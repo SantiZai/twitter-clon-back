@@ -7,7 +7,7 @@ export interface RowData {
 
 export const getUsers: RequestHandler = async (req, res) => {
     try {
-        const [users] = await pool.promise().query('SELECT * FROM user') as RowData[]
+        const [users] = await pool.promise().query('SELECT * FROM users') as RowData[]
         res.json(users)
     } catch (e) {
         res.status(500).json({ message: 'Something goes wrong' })
@@ -16,9 +16,9 @@ export const getUsers: RequestHandler = async (req, res) => {
 
 export const getUser: RequestHandler = async (req, res) => {
 	try {
-		const [rows] = await pool.promise().query('SELECT * FROM user WHERE id = ?', [req.params.id]) as RowData[]
+		const [rows] = await pool.promise().query('SELECT * FROM users WHERE id = ?', [req.params.id]) as RowData[]
 		if (rows.length <= 0) return res.status(404).json({ message: 'User not found' })
-			res.json(rows[0])
+		res.json(rows[0])
 	} catch (e) {
 		res.status(500).json({ message: 'Something goes wrong' })
 	}
@@ -27,7 +27,7 @@ export const getUser: RequestHandler = async (req, res) => {
 export const createUser: RequestHandler = async (req, res) => {
 	try {
 		const { user, password } = req.body
-		await pool.promise().query('INSERT INTO user (user, password) VALUES (?, ?)', [user, password]) as RowData[]
+		await pool.promise().query('INSERT INTO users (user, password) VALUES (?, ?)', [user, password]) as RowData[]
 		res.status(200).json({ message: 'User created' })
 	} catch (e) {
 		res.status(500).json({ message: 'Something goes wrong' })
@@ -37,8 +37,8 @@ export const createUser: RequestHandler = async (req, res) => {
 export const updateUser: RequestHandler = async (req, res) => {
 	try {
 		const id = req.params.id
-		const { user, password } = req.body
-		const [result] = await pool.promise().query('UPDATE user SET user = IFNULL(?, user), password = IFNULL(?, password) WHERE id = ?', [user, password, id]) as RowData[]
+		const { user, password, followeds } = req.body
+		const [result] = await pool.promise().query('UPDATE users SET user = IFNULL(?, user), password = IFNULL(?, password), followeds = IFNULL(?, followeds) WHERE id = ?', [user, password, followeds, id]) as RowData[]
 		if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' })
 			res.status(200).json({ message: 'User updated' })
 	} catch (e) {
@@ -49,10 +49,43 @@ export const updateUser: RequestHandler = async (req, res) => {
 export const deleteUser: RequestHandler = async (req, res) => {
 	try {
 		const id = req.params.id
-		const [result] = await pool.promise().query('DELETE FROM user WHERE id = ?', [id]) as RowData[]
+		const [result] = await pool.promise().query('DELETE FROM users WHERE id = ?', [id]) as RowData[]
 		if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' })
 			res.status(200).json({ message: 'User deleted successfully' })
 	} catch (e) {
 		res.status(500).json({ message: 'Something goes wrong' })
+	}
+}
+
+//TODO create a function for implement verifications
+export const followUser: RequestHandler = async (req, res) => {
+	try {
+		const id = req.params.id
+		const [rows] = await pool.promise().query('SELECT * FROM users WHERE id = ?', [id]) as RowData[]
+		if (rows.length <= 0) return res.status(404).json({ message: 'User not found' })
+		let { followeds } = rows[0]
+		const arrFollows = followeds.split(',')
+		const newFollow = req.params.fol
+		const userExists = await verifyUser(Number(newFollow))
+		if(Number(id) === Number(newFollow)) return res.status(409).json({ message: 'This is the same user' })
+		if (!userExists) return res.status(400).json({ message: 'User not found' })
+		if (arrFollows.includes(newFollow)) {
+			return res.status(409).json({ message: 'This user is already followed' })
+		}
+		followeds += ',' + newFollow
+		const [result] = await pool.promise().query('UPDATE users SET followeds = ? WHERE id = ?', [followeds, id]) as RowData[]
+		if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' })
+			res.status(200).json({ message: 'User updated' })
+	} catch (e) {
+		res.status(500).json({ message: 'Something goes wrong' })
+	}
+}
+
+const verifyUser = async (id: number) => {
+	try {
+		const [rows] = await pool.promise().query('SELECT * FROM users WHERE id = ?', [id]) as RowData[]
+		return rows.length > 0 
+	} catch (e) {
+		console.error(e)
 	}
 }
