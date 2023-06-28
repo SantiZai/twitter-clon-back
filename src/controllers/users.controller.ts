@@ -22,6 +22,17 @@ export const getUser: RequestHandler = async (req, res) => {
 	}
 }
 
+export const getFolloweds: RequestHandler = async (req, res) => {
+	try {
+		const [rows] = await pool.promise().query('SELECT followeds FROM users WHERE id = ?', [req.params.id]) as RowData[]
+		if (rows.length <= 0) return res.status(404).json({ message: 'User not found' })
+		const seguidos = rows[0].followeds.split(',')
+		res.json(seguidos)
+	} catch (e) {
+		res.status(500).json({ message: 'Something goes wrong' })
+	}
+}
+
 export const createUser: RequestHandler = async (req, res) => {
 	try {
 		const { user, password } = req.body
@@ -38,7 +49,7 @@ export const updateUser: RequestHandler = async (req, res) => {
 		const { user, password, followeds } = req.body
 		const [result] = await pool.promise().query('UPDATE users SET user = IFNULL(?, user), password = IFNULL(?, password), followeds = IFNULL(?, followeds) WHERE id = ?', [user, password, followeds, id]) as RowData[]
 		if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' })
-			res.status(200).json({ message: 'User updated' })
+		res.status(200).json({ message: 'User updated' })
 	} catch (e) {
 		res.status(500).json({ message: 'Something goes wrong' })
 	}
@@ -49,7 +60,7 @@ export const deleteUser: RequestHandler = async (req, res) => {
 		const id = req.params.id
 		const [result] = await pool.promise().query('DELETE FROM users WHERE id = ?', [id]) as RowData[]
 		if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' })
-			res.status(200).json({ message: 'User deleted successfully' })
+		res.status(200).json({ message: 'User deleted successfully' })
 	} catch (e) {
 		res.status(500).json({ message: 'Something goes wrong' })
 	}
@@ -58,7 +69,7 @@ export const deleteUser: RequestHandler = async (req, res) => {
 //TODO create a function for implement verifications
 export const followUser: RequestHandler = async (req, res) => {
 	try {
-		const id = req.params.id
+		const { id } = req.params
 		const [rows] = await pool.promise().query('SELECT * FROM users WHERE id = ?', [id]) as RowData[]
 		if (rows.length <= 0) return res.status(404).json({ message: 'User not found' })
 		let { followeds } = rows[0]
@@ -73,7 +84,7 @@ export const followUser: RequestHandler = async (req, res) => {
 		followeds += ',' + newFollow
 		const [result] = await pool.promise().query('UPDATE users SET followeds = ? WHERE id = ?', [followeds, id]) as RowData[]
 		if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' })
-			res.status(200).json({ message: 'User updated' })
+		res.status(200).json({ message: 'User updated' })
 	} catch (e) {
 		res.status(500).json({ message: 'Something goes wrong' })
 	}

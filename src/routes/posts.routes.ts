@@ -5,8 +5,8 @@ const postRouter = Router()
 
 postRouter.get('/', pRouter.getPosts)
 postRouter.get('/:id', pRouter.getPost)
-//postRouter.post('/', pRouter.createPost)
-//postRouter.patch('/:id', pRouter)
-//postRouter.delete('/:id', pRouter)
+postRouter.post('/', pRouter.createPost)
+postRouter.patch('/:id', pRouter.updatePost)
+postRouter.delete('/:id', pRouter.deletePost)
 
 export default postRouter

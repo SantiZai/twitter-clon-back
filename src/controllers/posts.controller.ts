@@ -21,10 +21,33 @@ export const getPost: RequestHandler = async (req, res) => {
 	}
 }
 
-//export const createPost: RequestHandler = async (req, res) => {
-//	try {
-//		const { user_id, text } req.body
-//	} catch (e) {
-//		return res.status(500).json({ message: 'Something goes wrong' })
-//	}
-//}
+export const createPost: RequestHandler = async (req, res) => {
+	try {
+		const { user_id, text } = req.body
+		await pool.promise().query('INSERT INTO posts (user_id, text) VALUES (?, ?)', [user_id, text]) as RowData[]
+		res.status(200).json({ message: 'Post created' })
+	} catch (e) {
+		return res.status(500).json({ message: 'Something goes wrong' })
+	}
+}
+
+export const updatePost: RequestHandler = async (req, res) => {
+	try {
+		const { text } = req.body
+		const [result] = await pool.promise().query('UPDATE posts SET text = ?, date = CURRENT_TIMESTAMP WHERE id = ?', [text, req.params.id]) as RowData[]
+		if (result.affectedRows === 0) return res.status(404).json({ message: 'Post not found' })
+		res.status(200).json({ message: 'Post updated' })
+	} catch (e) {
+		return res.status(500).json({ message: 'Something goes wrong' })
+	}
+}
+
+export const deletePost: RequestHandler = async (req, res) => {
+	try {
+		const [result] = await pool.promise().query('DELETE FROM posts WHERE id = ?', [req.params.id]) as RowData[]
+		if (result.affectedRows === 0) return res.status(404).json({ message: 'Post not found' })
+		res.status(200).json({ message: 'Post deleted successfully' })
+	} catch (e) {
+		return res.status(500).json({ message: 'Something goes wrong' })
+	}
+}
